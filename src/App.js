@@ -1,9 +1,26 @@
 import './App.css';
 import * as tf from '@tensorflow/tfjs'
-import {useRef, useState} from 'react'
+import {useRef, useState, useEffect} from 'react'
 import SignaturePad from 'react-signature-canvas'
 
-function App() {
+const modelPath = 'http://localhost:8080/model.json'
+let model
+
+async function loadModel () {
+  model = await tf.loadLayersModel(modelPath)
+}
+
+
+
+ function App() {
+  //load the digit-recognition ML model
+  useEffect(() => {
+    loadModel()
+    return () => {
+      
+    }
+  }, [])
+
   let sigRef = useRef({})
   const [prediction, setPrediction] = useState("None")
   const clearBoard = () => {
@@ -11,26 +28,32 @@ function App() {
   }
 
   async function Predict () {
-    const path = 'http://localhost:8080/model.json'
     // const canvas = sigRef.getTrimmedCanvas()
     const canvas = sigRef.getCanvas()
     const tensor = preprocessCanvas(canvas)
-    const model = await tf.loadLayersModel(path)
-    .then((actualModel)=>{
-      console.log("success loading the model:\n")
-      console.log("attempting to predict:\n")
-      const predData = actualModel.predict(tensor)
-      const confidence = predData.max()
-      const pred = predData.argMax(1)
-      const keys = Object.keys(pred)
-      console.log("values:\n" + predData.values)
-      console.log("typeof pred: " + typeof(pred))
-      keys.forEach(key => {
-        console.log(`pred[${key}]: ${pred[key]}`)
-      })
-      setPrediction(pred.dataSync()[0])
-    })
-    .catch((err)=>{console.log(`Error:\n ${err}`)})
+    // const model = await tf.loadLayersModel(modelPath)
+    console.log(Object.keys(model))
+
+    const predData = model.predict(tensor)
+    const pred = predData.argMax(1)
+
+    setPrediction(pred.dataSync()[0])
+
+    // .then((actualModel)=>{
+    //   console.log("success loading the model:\n")
+    //   console.log("attempting to predict:\n")
+    //   const predData = actualModel.predict(tensor)
+    //   const confidence = predData.max()
+    //   const pred = predData.argMax(1)
+    //   const keys = Object.keys(pred)
+    //   console.log("values:\n" + predData.values)
+    //   console.log("typeof pred: " + typeof(pred))
+    //   keys.forEach(key => {
+    //     console.log(`pred[${key}]: ${pred[key]}`)
+    //   })
+    //   setPrediction(pred.dataSync()[0])
+    // })
+    // .catch((err)=>{console.log(`Error:\n ${err}`)})
   }
 
   function preprocessCanvas(image) {
